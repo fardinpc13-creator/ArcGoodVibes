@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Send Good Vibes ✨</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.1/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --glow-amber: #ffb347;
+      --glow-pink: #ff6ec7;
+      --glow-purple: #a855f7;
+      --deep-bg: #0a0612;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--deep-bg);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated starfield background */
+    .starfield {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: white;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.1; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.4); }
+    }
+
+    /* Nebula blobs */
+    .nebula {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .nebula-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(168,85,247,0.18) 0%, transparent 70%);
+      top: -200px; left: -200px;
+      animation: drift1 20s ease-in-out infinite;
+    }
+    .nebula-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,110,199,0.15) 0%, transparent 70%);
+      bottom: -150px; right: -150px;
+      animation: drift2 25s ease-in-out infinite;
+    }
+    .nebula-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(255,179,71,0.12) 0%, transparent 70%);
+      top: 40%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: drift3 18s ease-in-out infinite;
+    }
+
+    @keyframes drift1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(60px, 40px); }
+    }
+    @keyframes drift2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-50px, -60px); }
+    }
+    @keyframes drift3 {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* Card */
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(15, 8, 30, 0.75);
+      border: 1px solid rgba(168, 85, 247, 0.25);
+      border-radius: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        0 0 0 1px rgba(255,179,71,0.08),
+        0 32px 64px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    /* Amount pills */
+    .amount-pill {
+      border: 1.5px solid rgba(168,85,247,0.35);
+      border-radius: 50px;
+      padding: 10px 28px;
+      color: rgba(255,255,255,0.55);
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: rgba(168,85,247,0.05);
+      user-select: none;
+    }
+
+    .amount-pill:hover {
+      border-color: rgba(255,110,199,0.6);
+      color: rgba(255,255,255,0.9);
+      transform: translateY(-2px);
+      background: rgba(255,110,199,0.1);
+    }
+
+    .amount-pill.selected {
+      border-color: var(--glow-amber);
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255,179,71,0.2), rgba(255,110,199,0.2));
+      box-shadow: 0 0 20px rgba(255,179,71,0.3), 0 4px 15px rgba(255,110,199,0.2);
+      transform: translateY(-3px) scale(1.05);
+    }
+
+    /* Main CTA button */
+    .vibes-btn {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
+      padding: 20px 40px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: linear-gradient(135deg, #ffb347 0%, #ff6ec7 50%, #a855f7 100%);
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      box-shadow:
+        0 0 40px rgba(255,179,71,0.4),
+        0 0 80px rgba(255,110,199,0.2),
+        0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .vibes-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      border-radius: inherit;
+    }
+
+    .vibes-btn:hover:not(:disabled) {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow:
+        0 0 60px rgba(255,179,71,0.6),
+        0 0 120px rgba(255,110,199,0.3),
+        0 16px 48px rgba(0,0,0,0.4);
+    }
+
+    .vibes-btn:active:not(:disabled) {
+      transform: translateY(-1px) scale(0.99);
+    }
+
+    .vibes-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Pulse ring on button */
+    .pulse-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 100px;
+      border: 2px solid rgba(255,179,71,0.4);
+      animation: pulse-ring 2s ease-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-ring {
+      0% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 0; transform: scale(1.12); }
+    }
+
+    /* Connect wallet btn */
+    .connect-btn {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      border: 1.5px solid rgba(168,85,247,0.5);
+      border-radius: 50px;
+      background: rgba(168,85,247,0.1);
+      color: rgba(255,255,255,0.8);
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.85rem;
+    }
+    .connect-btn:hover {
+      background: rgba(168,85,247,0.2);
+      border-color: rgba(168,85,247,0.8);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    /* Status badge */
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .status-dot.connected { background: #4ade80; box-shadow: 0 0 8px #4ade80; animation: pulse-dot 2s infinite; }
+    .status-dot.disconnected { background: rgba(255,255,255,0.3); }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Success overlay */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .success-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .success-card {
+      background: linear-gradient(135deg, rgba(20,10,40,0.95), rgba(30,10,50,0.95));
+      border: 1px solid rgba(255,179,71,0.3);
+      border-radius: 28px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 440px;
+      width: 90%;
+      box-shadow: 0 0 80px rgba(255,179,71,0.2), 0 0 160px rgba(255,110,199,0.1);
+      transform: scale(0.8);
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-overlay.active .success-card {
+      transform: scale(1);
+    }
+
+    .emoji-burst {
+      font-size: 4rem;
+      animation: emoji-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+    }
+
+    @keyframes emoji-bounce {
+      0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .floating-emojis {
+      position: absolute;
+      pointer-events: none;
+      font-size: 1.8rem;
+    }
+
+    @keyframes float-up {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-120px) rotate(20deg); opacity: 0; }
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Title glow */
+    .title-glow {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffb347 0%, #ff6ec7 40%, #c084fc 80%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 30px rgba(255,179,71,0.3));
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(20,10,40,0.95);
+      border: 1px solid rgba(168,85,247,0.4);
+      border-radius: 50px;
+      padding: 12px 24px;
+      color: rgba(255,255,255,0.9);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      z-index: 50;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.error { border-color: rgba(248,113,113,0.5); }
+    .toast.success { border-color: rgba(74,222,128,0.5); }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(168,85,247,0.3), transparent);
+    }
+
+    /* Wallet address chip */
+    .addr-chip {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50px;
+      padding: 4px 12px;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Explorer link */
+    .explorer-link {
+      color: var(--glow-amber);
+      text-decoration: none;
+      font-size: 0.85rem;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .explorer-link:hover { opacity: 1; text-decoration: underline; }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+  <!-- Nebula backgrounds -->
+  <div class="nebula nebula-1"></div>
+  <div class="nebula nebula-2"></div>
+  <div class="nebula nebula-3"></div>
+
+  <!-- Starfield (generated via JS) -->
+  <div class="starfield" id="starfield"></div>
+
+  <!-- Main card -->
+  <div class="card w-full max-w-md p-8 flex flex-col gap-6" style="position:relative;z-index:10;">
+
+    <!-- Header -->
+    <div class="text-center">
+      <div class="text-5xl mb-3" style="filter:drop-shadow(0 0 20px rgba(255,179,71,0.5))">✨</div>
+      <h1 class="title-glow text-4xl leading-tight mb-2">Good Vibes</h1>
+      <p style="font-family:'Space Grotesk';color:rgba(255,255,255,0.4);font-size:0.85rem;">
+        Send warmth onchain · Arc Testnet · USDC
+      </p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Wallet connection -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="status-dot disconnected" id="statusDot"></span>
+        <span style="color:rgba(255,255,255,0.45);font-size:0.82rem;" id="walletLabel">No wallet connected</span>
+      </div>
+      <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+        Connect Wallet
+      </button>
+    </div>
+
+    <!-- Balance display -->
+    <div id="balanceRow" class="hidden text-center">
+      <span style="color:rgba(255,255,255,0.3);font-size:0.8rem;">Your USDC Balance</span>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.6rem;color:#ffb347;" id="balanceDisplay">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Amount selection -->
+    <div>
+      <p style="font-family:'Space Grotesk';color:rgba(255,255,255,0.35);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;">
+        Choose your vibe size
+      </p>
+      <div class="flex gap-3 justify-center">
+        <button class="amount-pill" data-amount="1" onclick="selectAmount(1)">1 USDC</button>
+        <button class="amount-pill" data-amount="5" onclick="selectAmount(5)">5 USDC</button>
+        <button class="amount-pill selected" data-amount="10" onclick="selectAmount(10)">10 USDC</button>
+      </div>
+    </div>
+
+    <!-- Recipient info -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:14px 18px;">
+      <div class="flex items-center justify-between">
+        <span style="color:rgba(255,255,255,0.3);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;">To</span>
+        <span class="addr-chip" id="recipientChip">0x97d5...2bC9</span>
+      </div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.55);font-size:0.88rem;font-family:'Space Grotesk';">
+        Rasik's Vibes Wallet
+      </div>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="position:relative;">
+      <div class="pulse-ring" id="pulseRing"></div>
+      <button
+        class="vibes-btn w-full"
+        id="sendBtn"
+        onclick="sendVibes()"
+        disabled
+      >
+        <span id="btnText">✨ Send Good Vibes</span>
+        <span id="btnSpinner" class="hidden"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <!-- Footer note -->
+    <p style="text-align:center;color:rgba(255,255,255,0.2);font-size:0.75rem;line-height:1.5;">
+      Transactions run on Arc Testnet · USDC as gas<br/>
+      Make sure MetaMask is on Arc Testnet (Chain ID 5042002)
+    </p>
+
+  </div><!-- /card -->
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-card" id="successCard" style="position:relative;overflow:hidden;">
+      <div class="emoji-burst" id="successEmoji">🌊</div>
+      <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;background:linear-gradient(135deg,#ffb347,#ff6ec7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:16px 0 8px;">
+        Vibes Sent!
+      </h2>
+      <p style="color:rgba(255,255,255,0.5);font-size:0.9rem;margin-bottom:24px;" id="successMsg">
+        Your good energy is on its way 🚀
+      </p>
+      <div id="txHashRow" class="hidden" style="margin-bottom:24px;">
+        <a id="txLink" class="explorer-link" target="_blank" rel="noopener">
+          View on ArcScan ↗
+        </a>
+      </div>
+      <button onclick="closeSuccess()" style="font-family:'Syne',sans-serif;font-weight:700;background:linear-gradient(135deg,#ffb347,#ff6ec7);border:none;border-radius:50px;padding:14px 36px;color:white;cursor:pointer;font-size:1rem;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        Send More ✨
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ─── CONFIG ──────────────────────────────────────────────────────────────
+    const RECIPIENT    = '0x97d5aC8544a2F632FBFbC33Bad2C207c688D2bC9';
+    const ARC_CHAIN_ID = 5042002;
+    const ARC_RPC      = 'https://rpc.testnet.arc.network';
+    const EXPLORER     = 'https://testnet.arcscan.app';
+
+    // USDC on Arc Testnet is a native-ish system contract at 0x360...
+    const USDC_ADDRESS = '0x3600000000000000000000000000000000000000';
+    const ERC20_ABI = [
+      'function transfer(address to, uint256 amount) returns (bool)',
+      'function balanceOf(address owner) view returns (uint256)',
+      'function decimals() view returns (uint8)',
+    ];
+
+    // ─── STATE ────────────────────────────────────────────────────────────────
+    let selectedAmount = 10;
+    let walletAddress  = null;
+    let provider       = null;
+    let signer         = null;
+    let usdcDecimals   = 6; // will be fetched on connect
+
+    // ─── STARFIELD ────────────────────────────────────────────────────────────
+    (function createStars() {
+      const sf = document.getElementById('starfield');
+      for (let i = 0; i < 80; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() * 2.5 + 0.5;
+        s.style.cssText = `
+          left:${Math.random()*100}%;
+          top:${Math.random()*100}%;
+          width:${size}px; height:${size}px;
+          --dur:${2+Math.random()*4}s;
+          --delay:${Math.random()*5}s;
+        `;
+        sf.appendChild(s);
+      }
+    })();
+
+    // ─── AMOUNT SELECTION ─────────────────────────────────────────────────────
+    function selectAmount(amt) {
+      selectedAmount = amt;
+      document.querySelectorAll('.amount-pill').forEach(p => {
+        p.classList.toggle('selected', parseInt(p.dataset.amount) === amt);
+      });
+    }
+
+    // ─── CONNECT WALLET ───────────────────────────────────────────────────────
+    async function connectWallet() {
+      if (!window.ethereum) {
+        showToast('🦊 Please install MetaMask to continue', 'error');
+        return;
+      }
+
+      try {
+        // Request accounts
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        walletAddress = accounts[0];
+
+        // Try to switch to / add Arc Testnet
+        await ensureArcNetwork();
+
+        // Set up ethers provider
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer   = await provider.getSigner();
+
+        // Fetch USDC decimals
+        const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
+        usdcDecimals = await usdc.decimals();
+
+        updateWalletUI();
+        await refreshBalance();
+
+      } catch (err) {
+        console.error(err);
+        showToast('❌ ' + (err.message || 'Connection failed'), 'error');
+      }
+    }
+
+    async function ensureArcNetwork() {
+      const chainIdHex = '0x' + ARC_CHAIN_ID.toString(16);
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex }],
+        });
+      } catch (switchErr) {
+        // Chain not added yet — add it
+        if (switchErr.code === 4902 || switchErr.code === -32603) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: chainIdHex,
+              chainName: 'Arc Testnet',
+              nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+              rpcUrls: [ARC_RPC],
+              blockExplorerUrls: [EXPLORER],
+            }],
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+    }
+
+    function updateWalletUI() {
+      const dot   = document.getElementById('statusDot');
+      const label = document.getElementById('walletLabel');
+      const btn   = document.getElementById('connectBtn');
+      const sendBtn = document.getElementById('sendBtn');
+
+      dot.className = 'status-dot connected';
+      label.textContent = truncate(walletAddress);
+      btn.textContent   = 'Disconnect';
+      btn.onclick       = disconnectWallet;
+      sendBtn.disabled  = false;
+      document.getElementById('balanceRow').classList.remove('hidden');
+    }
+
+    async function refreshBalance() {
+      if (!walletAddress || !provider) return;
+      try {
+        const usdc = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
+        const raw  = await usdc.balanceOf(walletAddress);
+        const fmt  = parseFloat(ethers.formatUnits(raw, usdcDecimals)).toFixed(2);
+        document.getElementById('balanceDisplay').textContent = fmt + ' USDC';
+      } catch (e) {
+        document.getElementById('balanceDisplay').textContent = '— USDC';
+      }
+    }
+
+    function disconnectWallet() {
+      walletAddress = null; provider = null; signer = null;
+      const dot   = document.getElementById('statusDot');
+      const label = document.getElementById('walletLabel');
+      const btn   = document.getElementById('connectBtn');
+      const sendBtn = document.getElementById('sendBtn');
+
+      dot.className = 'status-dot disconnected';
+      label.textContent = 'No wallet connected';
+      btn.textContent = 'Connect Wallet';
+      btn.onclick = connectWallet;
+      sendBtn.disabled = true;
+      document.getElementById('balanceRow').classList.add('hidden');
+    }
+
+    // ─── SEND VIBES ───────────────────────────────────────────────────────────
+    async function sendVibes() {
+      if (!signer || !walletAddress) {
+        showToast('👆 Connect your wallet first', 'error');
+        return;
+      }
+
+      setBtnLoading(true);
+
+      try {
+        const usdc   = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+        const amount = ethers.parseUnits(selectedAmount.toString(), usdcDecimals);
+
+        showToast('⏳ Confirm in MetaMask…');
+        const tx = await usdc.transfer(RECIPIENT, amount);
+        showToast('🔗 Transaction submitted, waiting…');
+
+        const receipt = await tx.wait();
+
+        // Success!
+        setBtnLoading(false);
+        showSuccessOverlay(selectedAmount, receipt.hash);
+        fireConfetti();
+        await refreshBalance();
+
+      } catch (err) {
+        setBtnLoading(false);
+        console.error(err);
+        const msg = err?.reason || err?.shortMessage || err?.message || 'Transaction failed';
+        showToast('❌ ' + msg.slice(0, 80), 'error');
+      }
+    }
+
+    function setBtnLoading(loading) {
+      const btn     = document.getElementById('sendBtn');
+      const text    = document.getElementById('btnText');
+      const spinner = document.getElementById('btnSpinner');
+      btn.disabled  = loading;
+      text.classList.toggle('hidden', loading);
+      spinner.classList.toggle('hidden', !loading);
+    }
+
+    // ─── SUCCESS ──────────────────────────────────────────────────────────────
+    const successEmojis = ['🌊','💛','🌟','🎉','🦋','🌈','💫','✨','🎊'];
+
+    function showSuccessOverlay(amount, txHash) {
+      const overlay  = document.getElementById('successOverlay');
+      const emoji    = document.getElementById('successEmoji');
+      const msg      = document.getElementById('successMsg');
+      const txRow    = document.getElementById('txHashRow');
+      const txLink   = document.getElementById('txLink');
+
+      emoji.textContent = successEmojis[Math.floor(Math.random() * successEmojis.length)];
+      msg.textContent   = `${amount} USDC of pure good energy sent! 🚀`;
+
+      if (txHash) {
+        txLink.href = `${EXPLORER}/tx/${txHash}`;
+        txRow.classList.remove('hidden');
+      }
+
+      overlay.classList.add('active');
+      spawnFloatingEmojis();
+    }
+
+    function closeSuccess() {
+      document.getElementById('successOverlay').classList.remove('active');
+    }
+
+    function spawnFloatingEmojis() {
+      const card  = document.getElementById('successCard');
+      const emojis = ['✨','💛','🌟','💫','🎉','🦋'];
+      for (let i = 0; i < 8; i++) {
+        const el = document.createElement('div');
+        el.className = 'floating-emojis';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.cssText = `
+          left: ${10 + Math.random() * 80}%;
+          bottom: 20px;
+          animation: float-up ${1.2 + Math.random() * 1}s ease-out ${Math.random() * 0.5}s forwards;
+        `;
+        card.appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+      }
+    }
+
+    // ─── CONFETTI ─────────────────────────────────────────────────────────────
+    function fireConfetti() {
+      const colors = ['#ffb347', '#ff6ec7', '#a855f7', '#818cf8', '#fbbf24', '#f472b6'];
+      const base = { particleCount: 50, spread: 70, colors, startVelocity: 30 };
+
+      confetti({ ...base, origin: { x: 0.2, y: 0.6 } });
+      setTimeout(() => confetti({ ...base, origin: { x: 0.8, y: 0.6 } }), 150);
+      setTimeout(() => confetti({ ...base, particleCount: 80, origin: { x: 0.5, y: 0.5 } }), 300);
+      setTimeout(() => confetti({ particleCount: 40, spread: 100, colors, shapes: ['star'], origin: { x: 0.5, y: 0.3 } }), 500);
+    }
+
+    // ─── TOAST ────────────────────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (type ? ' ' + type : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // ─── UTILS ────────────────────────────────────────────────────────────────
+    function truncate(addr) {
+      return addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '';
+    }
+
+    // Listen for account/chain changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', accs => {
+        if (accs.length === 0) disconnectWallet();
+        else { walletAddress = accs[0]; updateWalletUI(); refreshBalance(); }
+      });
+      window.ethereum.on('chainChanged', () => window.location.reload());
+    }
+  </script>
+</body>
+</html>
